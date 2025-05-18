@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机图片API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 300px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .image-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .image-path {
+            word-break: break-all;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .tab-container {
+            margin-top: 20px;
+        }
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-button {
+            padding: 10px 15px;
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            margin-right: 2px;
+        }
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .code {
+            font-family: monospace;
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .options-form {
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: inline-block;
+            width: 120px;
+        }
+        select, input {
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>随机图片API测试</h1>
+            <p>这个页面用于测试优化后的随机图片API功能。您可以使用不同的参数组合来测试API。</p>
+            
+            <div class="options-form">
+                <h3>API选项</h3>
+                <div class="form-group">
+                    <label for="mode">模式：</label>
+                    <select id="mode">
+                        <option value="single">单抽</option>
+                        <option value="multi">十连</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="count">自定义数量：</label>
+                    <input type="number" id="count" min="1" max="10" value="1">
+                    <small>（仅在多图模式下有效，最大10）</small>
+                </div>
+                <div class="form-group">
+                    <label for="format">返回格式：</label>
+                    <select id="format">
+                        <option value="json">JSON</option>
+                        <option value="text">纯文本</option>
+                        <option value="html">HTML</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pretty">美化JSON：</label>
+                    <input type="checkbox" id="pretty" checked>
+                </div>
+                <div class="form-group">
+                    <label for="info">包含额外信息：</label>
+                    <input type="checkbox" id="info">
+                </div>
+                <div class="form-group">
+                    <label for="no_cache">禁用缓存：</label>
+                    <input type="checkbox" id="no_cache">
+                </div>
+                <div class="form-group">
+                    <label for="api_style">API风格：</label>
+                    <select id="api_style">
+                        <option value="restful">RESTful风格 (?mode=)</option>
+                        <option value="traditional">传统风格 (?wpon=)</option>
+                        <option value="count">数量风格 (?count=)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="testApi">测试API</button>
+                <button id="clearResults">清除结果</button>
+            </div>
+            
+            <h2>API请求URL：</h2>
+            <pre id="requestUrl">点击"测试API"按钮生成请求URL...</pre>
+            
+            <h2>API响应：</h2>
+            <pre id="response">点击"测试API"按钮查看响应...</pre>
+            
+            <h2>图片预览：</h2>
+            <div id="imagePreview" class="image-grid"></div>
+        </div>
+        
+        <div class="card">
+            <h2>API使用文档</h2>
+            
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="openTab(event, 'basic')">基本用法</button>
+                    <button class="tab-button" onclick="openTab(event, 'params')">参数说明</button>
+                    <button class="tab-button" onclick="openTab(event, 'examples')">示例</button>
+                    <button class="tab-button" onclick="openTab(event, 'integration')">集成方法</button>
+                </div>
+                
+                <div id="basic" class="tab-content active">
+                    <h3>基本API端点</h3>
+                    <p>API基础URL：<span class="code">http://nj.aynu.asia/index.php</span></p>
+                    
+                    <h3>支持的API风格</h3>
+                    <table>
+                        <tr>
+                            <th>风格</th>
+                            <th>单抽</th>
+                            <th>多抽</th>
+                            <th>说明</th>
+                        </tr>
+                        <tr>
+                            <td>RESTful风格</td>
+                            <td><span class="code">?mode=single</span></td>
+                            <td><span class="code">?mode=multi</span></td>
+                            <td>更符合RESTful API设计原则</td>
+                        </tr>
+                        <tr>
+                            <td>传统风格</td>
+                            <td><span class="code">?wpon=url</span></td>
+                            <td><span class="code">?wpon=url10</span></td>
+                            <td>兼容原有API</td>
+                        </tr>
+                        <tr>
+                            <td>数量风格</td>
+                            <td><span class="code">?count=1</span></td>
+                            <td><span class="code">?count=10</span></td>
+                            <td>直接指定返回图片数量</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div id="params" class="tab-content">
+                    <h3>请求参数</h3>
+                    <table>
+                        <tr>
+                            <th>参数</th>
+                            <th>可选值</th>
+                            <th>默认值</th>
+                            <th>说明</th>
+                        </tr>
+                        <tr>
+                            <td>mode</td>
+                            <td>single, multi</td>
+                            <td>single</td>
+                            <td>指定返回单张或多张图片</td>
+                        </tr>
+                        <tr>
+                            <td>wpon</td>
+                            <td>url, url10</td>
+                            <td>url</td>
+                            <td>传统参数，url表示单抽，url10表示十连</td>
+                        </tr>
+                        <tr>
+                            <td>count</td>
+                            <td>1-10</td>
+                            <td>1</td>
+                            <td>指定返回图片数量</td>
+                        </tr>
+                        <tr>
+                            <td>limit</td>
+                            <td>1-10</td>
+                            <td>10</td>
+                            <td>在多图模式下限制返回数量</td>
+                        </tr>
+                        <tr>
+                            <td>format</td>
+                            <td>json, text, html</td>
+                            <td>json</td>
+                            <td>指定返回格式</td>
+                        </tr>
+                        <tr>
+                            <td>pretty</td>
+                            <td>0, 1</td>
+                            <td>0</td>
+                            <td>是否美化JSON输出</td>
+                        </tr>
+                        <tr>
+                            <td>info</td>
+                            <td>0, 1</td>
+                            <td>0</td>
+                            <td>是否包含额外信息（如图片总数、概率等）</td>
+                        </tr>
+                        <tr>
+                            <td>no_cache</td>
+                            <td>0, 1</td>
+                            <td>0</td>
+                            <td>是否禁用缓存</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div id="examples" class="tab-content">
+                    <h3>API调用示例</h3>
+                    
+                    <h4>1. 基本调用</h4>
+                    <p><span class="code">http://nj.aynu.asia/index.php?mode=single</span> - 单抽一张图片</p>
+                    <p><span class="code">http://nj.aynu.asia/index.php?mode=multi</span> - 十连抽</p>
+                    
+                    <h4>2. 自定义数量</h4>
+                    <p><span class="code">http://nj.aynu.asia/index.php?count=5</span> - 返回5张图片</p>
+                    
+                    <h4>3. 不同格式</h4>
+                    <p><span class="code">http://nj.aynu.asia/index.php?mode=single&format=text</span> - 纯文本格式</p>
+                    <p><span class="code">http://nj.aynu.asia/index.php?mode=multi&format=html</span> - HTML格式（直接显示图片）</p>
+                    
+                    <h4>4. 带额外信息</h4>
+                    <p><span class="code">http://nj.aynu.asia/index.php?mode=single&info=1</span> - 包含图片总数和概率信息</p>
+                    
+                    <h4>5. 组合参数</h4>
+                    <p><span class="code">http://nj.aynu.asia/index.php?count=3&format=json&pretty=1&info=1&no_cache=1</span> - 返回3张图片，JSON格式，美化输出，包含额外信息，禁用缓存</p>
+                </div>
+                
+                <div id="integration" class="tab-content">
+                    <h3>集成方法</h3>
+                    
+                    <h4>1. HTML中使用</h4>
+                    <pre>&lt;img src="http://nj.aynu.asia/index.php?mode=single" alt="随机图片"&gt;</pre>
+                    
+                    <h4>2. JavaScript中使用</h4>
+                    <pre>// 获取单张随机图片
+fetch('http://nj.aynu.asia/index.php?mode=single')
+  .then(response => response.json())
+  .then(data => {
+    const img = document.createElement('img');
+    img.src = data.data;
+    document.body.appendChild(img);
+  });
+
+// 获取多张随机图片
+fetch('http://nj.aynu.asia/index.php?mode=multi')
+  .then(response => response.json())
+  .then(data => {
+    data.data.forEach(imgPath => {
+      const img = document.createElement('img');
+      img.src = imgPath;
+      document.body.appendChild(img);
+    });
+  });</pre>
+                    
+                    <h4>3. PHP中使用</h4>
+                    <pre>&lt;?php
+$response = file_get_contents('http://nj.aynu.asia/index.php?mode=single');
+$data = json_decode($response, true);
+echo '&lt;img src="' . $data['data'] . '" alt="随机图片"&gt;';
+?&gt;</pre>
+                    
+                    <h4>4. Python中使用</h4>
+                    <pre>import requests
+
+# 获取单张图片
+response = requests.get('http://nj.aynu.asia/index.php?mode=single')
+data = response.json()
+print(data['data'])
+
+# 获取多张图片
+response = requests.get('http://nj.aynu.asia/index.php?mode=multi')
+data = response.json()
+for img_path in data['data']:
+    print(img_path)</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 标签页切换功能
+        function openTab(evt, tabName) {
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            const tabButtons = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+        
+        // API测试功能
+        document.getElementById('testApi').addEventListener('click', () => {
+            const mode = document.getElementById('mode').value;
+            const count = document.getElementById('count').value;
+            const format = document.getElementById('format').value;
+            const pretty = document.getElementById('pretty').checked ? '1' : '0';
+            const info = document.getElementById('info').checked ? '1' : '0';
+            const noCache = document.getElementById('no_cache').checked ? '1' : '0';
+            const apiStyle = document.getElementById('api_style').value;
+            
+            let url = 'index.php?';
+            
+            // 根据选择的API风格构建URL
+            if (apiStyle === 'restful') {
+                url += `mode=${mode}`;
+                if (mode === 'multi' && count !== '10') {
+                    url += `&limit=${count}`;
+                }
+            } else if (apiStyle === 'traditional') {
+                url += `wpon=${mode === 'single' ? 'url' : 'url10'}`;
+                if (mode === 'multi' && count !== '10') {
+                    url += `&limit=${count}`;
+                }
+            } else if (apiStyle === 'count') {
+                url += `count=${count}`;
+            }
+            
+            // 添加其他参数
+            url += `&format=${format}`;
+            if (pretty === '1') url += '&pretty=1';
+            if (info === '1') url += '&info=1';
+            if (noCache === '1') url += '&no_cache=1';
+            
+            // 显示请求URL
+            document.getElementById('requestUrl').textContent = url;
+            
+            // 发送请求
+            fetch(url)
+                .then(response => {
+                    if (format === 'json') {
+                        return response.json();
+                    } else if (format === 'text') {
+                        return response.text();
+                    } else if (format === 'html') {
+                        return response.text();
+                    }
+                })
+                .then(data => {
+                    // 显示响应
+                    if (typeof data === 'object') {
+                        document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+                    } else {
+                        document.getElementById('response').textContent = data;
+                    }
+                    
+                    // 清空图片预览
+                    const imagePreview = document.getElementById('imagePreview');
+                    imagePreview.innerHTML = '';
+                    
+                    // 添加图片路径预览
+                    if (format === 'json') {
+                        const paths = Array.isArray(data.data) ? data.data : [data.data];
+                        paths.forEach(path => {
+                            const item = document.createElement('div');
+                            item.className = 'image-item';
+                            
+                            const img = document.createElement('img');
+                            img.src = path;
+                            img.alt = '随机图片';
+                            img.style.width = '100%';
+                            
+                            const pathText = document.createElement('div');
+                            pathText.className = 'image-path';
+                            pathText.textContent = path;
+                            
+                            item.appendChild(img);
+                            item.appendChild(pathText);
+                            imagePreview.appendChild(item);
+                        });
+                    } else if (format === 'text') {
+                        const paths = data.split('\n');
+                        paths.forEach(path => {
+                            if (path.trim()) {
+                                const item = document.createElement('div');
+                                item.className = 'image-item';
+                                
+                                const img = document.createElement('img');
+                                img.src = path;
+                                img.alt = '随机图片';
+                                img.style.width = '100%';
+                                
+                                const pathText = document.createElement('div');
+                                pathText.className = 'image-path';
+                                pathText.textContent = path;
+                                
+                                item.appendChild(img);
+                                item.appendChild(pathText);
+                                imagePreview.appendChild(item);
+                            }
+                        });
+                    } else if (format === 'html') {
+                        // 对于HTML格式，我们可以显示一个iframe
+                        const iframe = document.createElement('iframe');
+                        iframe.srcdoc = data;
+                        iframe.style.width = '100%';
+                        iframe.style.height = '500px';
+                        iframe.style.border = '1px solid #ddd';
+                        imagePreview.appendChild(iframe);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('response').textContent = `错误: ${error.message}`;
+                });
+        });
+        
+        // 清除结果
+        document.getElementById('clearResults').addEventListener('click', () => {
+            document.getElementById('requestUrl').textContent = '点击"测试API"按钮生成请求URL...';
+            document.getElementById('response').textContent = '点击"测试API"按钮查看响应...';
+            document.getElementById('imagePreview').innerHTML = '';
+        });
+        
+        // 模式变化时更新数量输入框状态
+        document.getElementById('mode').addEventListener('change', function() {
+            const countInput = document.getElementById('count');
+            if (this.value === 'single') {
+                countInput.value = '1';
+                countInput.disabled = true;
+            } else {
+                countInput.value = '10';
+                countInput.disabled = false;
+            }
+        });
+        
+        // 初始化
+        document.getElementById('count').disabled = (document.getElementById('mode').value === 'single');
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "koishi-plugin-njcard",
+  "description": "一个用于皇冠抽卡的插件",
+  "version": "1.0.1",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "license": "MIT",
+  "scripts": {},
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin"
+  ],
+  "peerDependencies": {
+    "koishi": "^4.11.2"
+  }
+}
